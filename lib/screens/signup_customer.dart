@@ -1,0 +1,331 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
+
+class CustomerSignupScreen extends StatefulWidget {
+  @override
+  _CustomerSignupScreenState createState() => _CustomerSignupScreenState();
+}
+
+class _CustomerSignupScreenState extends State<CustomerSignupScreen> {
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+  final formKey = GlobalKey<FormState>();
+
+  var _loading = false;
+
+  String _email, _password;
+  String _cpassword;
+  String _name, _contact, _address;
+
+  bool _obscurePassword = true;
+
+  int _currentStep = 1;
+
+  void _showSnackBar(String text) {
+    scaffoldKey.currentState.hideCurrentSnackBar();
+    scaffoldKey.currentState.showSnackBar(SnackBar(
+      content: Text(text),
+      action: SnackBarAction(
+        label: 'Dismiss',
+        onPressed: () {
+          scaffoldKey.currentState.hideCurrentSnackBar();
+        },
+      ),
+    ));
+  }
+
+  Future<bool> _verifyEmail() async {
+    var result = await rootBundle.loadString('assets/database.json');
+    var credentials = json.decode(result);
+    if(credentials['email'] == _email) {
+      return false;
+    }
+    else return true;
+  }
+
+  void _submit() async {
+     final form = formKey.currentState;
+
+    _loading = true;
+
+    form.save();
+    if(form.validate()) {
+
+      if(_currentStep == 1) {
+        if(await _verifyEmail()) {
+          setState(() {
+            _currentStep += 1;
+          });
+        }
+        else {
+          _showSnackBar("The email address is already in use.");
+        }
+      }
+      else if(_currentStep == 2) {
+        setState(() {
+          _currentStep += 1;
+        });
+      }
+    }
+    _loading = false;
+  }
+
+  Widget build(BuildContext context) {
+
+    Widget progressStep(stepNumber) {
+      return Container(
+        alignment: Alignment.center,
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: _currentStep >= stepNumber ? Theme.of(context).primaryColor : Colors.grey,
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          stepNumber.toString(),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    Widget progressLine(stepNumber) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal:0.0),
+        child: Container(
+          height: 1.0,
+          width: 120.0,
+          color: _currentStep > stepNumber ? Theme.of(context).primaryColor : Colors.grey,
+        ),
+      );
+    }
+
+    Widget progress = Container(
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
+        progressStep(1),
+        progressLine(1),
+        progressStep(2),
+        progressLine(2),
+        progressStep(3),
+      ],)
+    );
+
+    Widget emailForm = Form(
+      key: _currentStep == 1 ? formKey : null,
+      child: TextFormField(
+        validator: (text) => null,
+        onSaved: (text) => _email = text,
+        cursorColor: Theme.of(context).primaryColor,
+        decoration: InputDecoration(
+          labelText: 'Email address',
+          prefixIcon: Icon(Icons.email),
+        ),
+      ),
+    );
+
+    Widget emailPage = Padding(
+      padding: EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+        progress,
+        Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: Text(
+            'Create an account',
+            style: TextStyle(
+              color: Color(0xFF002626),
+              fontSize: 30.0,
+              fontWeight: FontWeight.bold
+            ),
+          ),
+        ),
+        SizedBox(height: 20.0,),
+        Text(
+          'Please enter your email address:',
+          style: TextStyle(
+            color: Color(0xFF002626),
+            fontSize: 14.0,
+          ),
+        ),
+        SizedBox(height: 20.0,),
+        Center(
+          child: Column(children: <Widget>[
+            emailForm,
+          ],),
+        ),
+      ]),
+    );
+
+    Widget passwordForm = Form(
+      key: _currentStep == 2 ? formKey : null,
+      child: Column(children: <Widget>[ 
+        TextFormField(
+          validator: (text) => null,
+          onSaved: (text) => _password = text,
+          cursorColor: Theme.of(context).primaryColor,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            prefixIcon: Icon(Icons.vpn_key),
+            suffixIcon: IconButton(icon: _obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility), onPressed: () => {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              })
+            })
+          ),
+        ),
+        TextFormField(
+          validator: (text) {
+            if(_cpassword != _password) return 'Passwords do not match';
+            return null;
+          },
+          onSaved: (text) => _cpassword = text,
+          cursorColor: Theme.of(context).primaryColor,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            labelText: 'Confirm password',
+            prefixIcon: Icon(Icons.vpn_key),
+            suffixIcon: IconButton(icon: _obscurePassword ? Icon(Icons.visibility_off) : Icon(Icons.visibility), onPressed: () => {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              })
+            })
+          ),
+        ),
+      ]),
+    );
+
+    Widget detailsForm = Form(
+      key: _currentStep == 3 ? formKey : null,
+      child: Column(children: <Widget>[ 
+        TextFormField(
+          validator: (text) => null,
+          onSaved: (text) => _name = text,
+          cursorColor: Theme.of(context).primaryColor,
+          decoration: InputDecoration(
+            labelText: 'Name',
+            prefixIcon: Icon(Icons.person),
+          ),
+        ),
+        TextFormField(
+          validator: (text) => null,
+          onSaved: (text) => _contact = text,
+          cursorColor: Theme.of(context).primaryColor,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            labelText: 'Contact number',
+            prefixIcon: Icon(Icons.phone),
+          ),
+        ),
+        TextFormField(
+          validator: (text) => null,
+          onSaved: (text) => _contact = text,
+          cursorColor: Theme.of(context).primaryColor,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            labelText: 'Address',
+            prefixIcon: Icon(Icons.location_on),
+          ),
+        ),
+      ]),
+    );
+
+    Widget detailsPage = Padding(
+      padding: EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+        progress,
+        Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: Text(
+            'Almost done',
+            style: TextStyle(
+              color: Color(0xFF002626),
+              fontSize: 30.0,
+              fontWeight: FontWeight.bold
+            ),
+          ),
+        ),
+        SizedBox(height: 20.0,),
+        Text(
+          'Please enter the required details:',
+          style: TextStyle(
+            color: Color(0xFF002626),
+            fontSize: 14.0,
+          ),
+        ),
+        SizedBox(height: 20.0,),
+        Center(
+          child: Column(children: <Widget>[
+            detailsForm,
+          ],),
+        ),
+      ]),
+    );
+
+    Widget passwordPage = Padding(
+      padding: EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
+        progress,
+        Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: Text(
+            'Create an account',
+            style: TextStyle(
+              color: Color(0xFF002626),
+              fontSize: 30.0,
+              fontWeight: FontWeight.bold
+            ),
+          ),
+        ),
+        SizedBox(height: 20.0,),
+        Text(
+          'Please choose a password:',
+          style: TextStyle(
+            color: Color(0xFF002626),
+            fontSize: 14.0,
+          ),
+        ),
+        SizedBox(height: 20.0,),
+        Center(
+          child: Column(children: <Widget>[
+            passwordForm,
+          ],),
+        ),
+      ]),
+    );
+
+    Widget _getPage() {
+      if(_currentStep == 1) return emailPage;
+      if(_currentStep == 2) return passwordPage;
+      if(_currentStep == 3) return detailsPage;
+      else return Container(); 
+    }
+
+    return Scaffold (
+      key: scaffoldKey,
+      appBar: AppBar(
+        title: Text('Paani - Sign up'),
+        actions: <Widget>[
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.info),
+            color: Colors.white,
+          ),
+          FlatButton(
+            onPressed: _submit,
+            child: Text(
+              'Next',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: _getPage(),
+      ),
+    );
+  }
+}
