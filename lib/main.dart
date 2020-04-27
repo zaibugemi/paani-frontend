@@ -3,8 +3,8 @@ import 'package:paani/screens/index.dart';
 import 'package:paani/screens/login.dart';
 import 'package:paani/screens/signup_customer.dart';
 import 'package:paani/screens/signup_company.dart';
-import 'package:paani/screens/
-import 'package:paani/screens/
+import 'package:paani/screens/login_or_signup.dart;
+import 'package:paani/screens/customer_or_company.dart;
 
 void main() => runApp(MyApp());
 
